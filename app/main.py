@@ -4,6 +4,7 @@ from app.infrastructure.http_client import ResilientHTTPClient
 from app.repository.berry_repository import BerryRepository
 from app.usecase.get_all_berry_stats_usecase import GetAllBerryStatsUseCase
 from app.handler.berry_stats_handler import get_router
+from app.handler.berry_graph_handler import get_graph_router
 
 
 app = FastAPI(title="Berry Stats API")
@@ -17,7 +18,9 @@ repository = BerryRepository(http_client)
 # ✅ Inject into usecase
 usecase = GetAllBerryStatsUseCase(repository)
 
+# ✅ Register routers
 app.include_router(get_router(usecase))
+app.include_router(get_graph_router(usecase))
 
 
 @app.on_event("shutdown")
