@@ -44,8 +44,7 @@ Follow the steps below to download and configure the project locally.
 ## 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/pokeapi-fastapi.git
-cd pokeapi-fastapi
+git clone git@github.com:matsaldev/berry-stats-api.git
 cd berry_stats_api
 ```
 
