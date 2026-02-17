@@ -10,42 +10,42 @@ from fastapi.responses import Response
 from app.usecase.get_all_berry_stats_usecase import GetAllBerryStatsUseCase
 
 
-def get_graph_router(usecase: GetAllBerryStatsUseCase) -> APIRouter:
-    """
-    Separate router responsible only for graph visualization.
-    """
+def get_graph_router(usecase: GetAllBerryStatsUseCase, cache) -> APIRouter:
     router = APIRouter()
 
     @router.get("/allBerryStats/graph", response_class=Response)
     async def get_all_berry_stats_graph(limit: int = Query(10, ge=1, le=100)):
-        try:
-            # Reuse repository through usecase
-            berries = await usecase.repository.fetch_berries(limit)
 
-            growth_times = [b.growth_time for b in berries]
+        cache_key = f"graph:{limit}"
 
-            if not growth_times:
-                raise HTTPException(status_code=404, detail="No berry data available")
-
-            # Create histogram
-            plt.figure()
-            plt.hist(growth_times, bins="auto")
-            plt.title("Berry Growth Time Distribution")
-            plt.xlabel("Growth Time")
-            plt.ylabel("Frequency")
-
-            # Save as SVG in memory
-            buffer = io.BytesIO()
-            plt.savefig(buffer, format="svg")
-            plt.close()
-            buffer.seek(0)
-
+        cached = cache.get(cache_key)
+        if cached:
             return Response(
-                content=buffer.getvalue(),
+                content=cached,
                 media_type="image/svg+xml"
             )
 
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        berries = await usecase.repository.fetch_berries(limit)
+        growth_times = [b.growth_time for b in berries]
+        names = [b.name for b in berries]
+
+        plt.figure(figsize=(10, 6))
+        bars = plt.bar(names, growth_times)
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format="svg")
+        plt.close()
+        buffer.seek(0)
+
+        svg_data = buffer.getvalue()
+
+        cache.set(cache_key, svg_data)
+
+        return Response(
+            content=svg_data,
+            media_type="image/svg+xml"
+        )
 
     return router
