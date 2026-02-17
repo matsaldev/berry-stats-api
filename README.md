@@ -190,6 +190,37 @@ curl "http://127.0.0.1:8000/allBerryStats?limit=5"
 
 ---
 
+## `GET /allBerryStats/graph`
+
+Retrieves a histogram visualization of the `growth_time` frequency distribution of berries.
+
+### Query Parameters
+
+| Parameter | Type | Description | Default |
+|------------|------|-------------|----------|
+| limit | int  | Number of berries to analyze (1–100) | 10 |
+| bins  | int  | Number of bins for the histogram (1 or greater) | 5 |
+
+---
+
+### ✅ Example Request
+
+```bash
+curl "http://127.0.0.1:8000/allBerryStats/graph?limit=5&bins=3"
+```
+
+---
+
+### ✅ Example Response
+
+Below is an example histogram visualization generated from the /allBerryStats/graph endpoint response.
+The x-axis represents the growth_time ranges (bins),
+and the y-axis represents the frequency (number of berries) in each range:
+
+![img.png](img.png)
+
+---
+
 # 🛠 Tech Stack
 
 - Python **3.12**
