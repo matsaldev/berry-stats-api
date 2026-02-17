@@ -1,51 +1,55 @@
 import io
 import matplotlib
 matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, Depends, Request
 from fastapi.responses import Response
 
-from app.usecase.get_all_berry_stats_usecase import GetAllBerryStatsUseCase
+router = APIRouter()
 
 
-def get_graph_router(usecase: GetAllBerryStatsUseCase, cache) -> APIRouter:
-    router = APIRouter()
+def get_usecase(request: Request):
+    return request.app.state.usecase
 
-    @router.get("/allBerryStats/graph", response_class=Response)
-    async def get_all_berry_stats_graph(limit: int = Query(10, ge=1, le=100)):
 
-        cache_key = f"graph:{limit}"
+def get_cache(request: Request):
+    return request.app.state.cache
 
-        cached = cache.get(cache_key)
-        if cached:
-            return Response(
-                content=cached,
-                media_type="image/svg+xml"
-            )
 
-        berries = await usecase.repository.fetch_berries(limit)
-        growth_times = [b.growth_time for b in berries]
-        names = [b.name for b in berries]
+@router.get("/allBerryStats/graph")
+async def get_all_berry_stats_graph(
+    limit: int = Query(10, ge=1, le=100),
+    usecase=Depends(get_usecase),
+    cache=Depends(get_cache),
+):
+    """
+    Returns berry growth histogram as SVG.
+    """
 
-        plt.figure(figsize=(10, 6))
-        bars = plt.bar(names, growth_times)
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
+    cache_key = f"graph:{limit}"
 
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format="svg")
-        plt.close()
-        buffer.seek(0)
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(content=cached, media_type="image/svg+xml")
 
-        svg_data = buffer.getvalue()
+    berries = await usecase.repository.fetch_berries(limit)
 
-        cache.set(cache_key, svg_data)
+    names = [b.name for b in berries]
+    growth_times = [b.growth_time for b in berries]
 
-        return Response(
-            content=svg_data,
-            media_type="image/svg+xml"
-        )
+    plt.figure(figsize=(10, 6))
+    plt.bar(names, growth_times)
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
 
-    return router
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format="svg")
+    plt.close()
+    buffer.seek(0)
+
+    svg_data = buffer.getvalue()
+
+    cache.set(cache_key, svg_data)
+
+    return Response(content=svg_data, media_type="image/svg+xml")

@@ -1,25 +1,35 @@
-from fastapi import APIRouter, Query, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Query, Depends, Request
 
-from app.usecase.get_all_berry_stats_usecase import GetAllBerryStatsUseCase
+router = APIRouter()
 
 
-def get_router(usecase: GetAllBerryStatsUseCase, cache) -> APIRouter:
-    router = APIRouter()
+def get_usecase(request: Request):
+    return request.app.state.usecase
 
-    @router.get("/allBerryStats")
-    async def get_all_berry_stats(limit: int = Query(10, ge=1, le=100)):
-        cache_key = f"stats:{limit}"
 
-        cached = cache.get(cache_key)
-        if cached:
-            return cached
+def get_cache(request: Request):
+    return request.app.state.cache
 
-        result = await usecase.execute(limit)
-        response = result.__dict__
 
-        cache.set(cache_key, response)
+@router.get("/allBerryStats")
+async def get_all_berry_stats(
+    limit: int = Query(10, ge=1, le=100),
+    usecase=Depends(get_usecase),
+    cache=Depends(get_cache),
+):
+    """
+    Returns berry statistics in JSON format.
+    """
 
-        return response
+    cache_key = f"stats:{limit}"
 
-    return router
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
+    result = await usecase.execute(limit)
+    response = result.__dict__
+
+    cache.set(cache_key, response)
+
+    return response
