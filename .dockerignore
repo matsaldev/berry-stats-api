@@ -1,0 +1,21 @@
+# Ignore the .git directory
+.git/
+
+# Ignore IDE/editor configuration files
+.idea/
+.vscode/
+
+# Ignore Python virtual environments
+.venv/
+env/
+
+# Ignore __pycache__ and compiled Python files
+__pycache__/
+*.pyc
+
+# Ignore log files
+*.log
+
+# Ignore Docker-related files (optional)
+Dockerfile
+docker-compose.yml
